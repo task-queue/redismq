@@ -20,7 +20,11 @@ func main() {
 
 	flag.Parse()
 
-	r := redismq.New(nil)
+	config := &redismq.Config{
+		RedisDSN: "localhost:6379",
+	}
+
+	r := redismq.New(config)
 
 	err := r.Connect()
 	if err != nil {
@@ -32,6 +36,8 @@ func main() {
 	for true {
 		i++
 		r.Publish(*queueName, []byte("Ping command "+strconv.Itoa(i)))
-		time.Sleep(time.Duration(*sleepMilleseconds) * time.Millisecond)
+		if *sleepMilleseconds > 0 {
+			time.Sleep(time.Duration(*sleepMilleseconds) * time.Millisecond)
+		}
 	}
 }

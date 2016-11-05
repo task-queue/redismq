@@ -24,8 +24,9 @@ func main() {
 		panic(err)
 	}
 
-	r.Consume(*queueName, func(body []byte) {
+	r.Consume(*queueName, func(body []byte) error {
 		fmt.Println("receive body", string(body))
+		return nil
 	})
 
 }

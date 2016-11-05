@@ -1,14 +1,13 @@
 package redismq
 
 import (
-	"fmt"
-
 	"gopkg.in/redis.v5"
 )
 
 type RedisMQ struct {
 	config *Config
 	redis  *redis.Client
+	broker IBroker
 }
 
 func New(config *Config) *RedisMQ {
@@ -23,29 +22,27 @@ func (r *RedisMQ) Connect() error {
 		DB:       0,  // use default DB
 	})
 
+	r.broker = r.createBroker()
+
 	_, err := r.redis.Ping().Result()
 
 	return err
 }
 
-// Declare Queue
-func (r *RedisMQ) Declare(queueName string) {
-
-}
-
 func (r *RedisMQ) Publish(queueName string, body []byte) {
-	cmd := r.redis.LPush(queueName, string(body))
-	_, err := cmd.Result()
+	err := r.broker.Push(queueName, body)
 
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *RedisMQ) Consume(queueName string, callback func(body []byte)) {
-	// register new consumer
-	c := newConsumer(r.redis, queueName)
-	fmt.Println("Consumer:", c.ID)
+func (r *RedisMQ) Consume(queueName string, fn callbackFunction) {
+	broker := r.createBroker()
+	c := newConsumer(broker, queueName)
+	c.Listen(fn)
+}
 
-	c.Listen(callback)
+func (r *RedisMQ) createBroker() IBroker {
+	return &BrokerRedis{client: r.redis}
 }
