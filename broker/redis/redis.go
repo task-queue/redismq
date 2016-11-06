@@ -1,4 +1,4 @@
-package redismq
+package broker 
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"gopkg.in/redis.v5"
 )
 
-type BrokerRedis struct {
+type Redis struct {
 	client *redis.Client
 
 	id int64
@@ -18,13 +18,13 @@ type BrokerRedis struct {
 	heartbeatQueue string
 }
 
-func (c BrokerRedis) Push(queue string, body []byte) error {
+func (c Redis) Push(queue string, body []byte) error {
 	cmd := c.client.LPush(queue, string(body))
 	_, err := cmd.Result()
 	return err
 }
 
-func (c *BrokerRedis) InitConsumer(queue string) error {
+func (c *Redis) InitConsumer(queue string) error {
 	var err error
 
 	c.id, err = c.client.Incr("redismq::" + queue + "::consumers").Result()
@@ -42,16 +42,16 @@ func (c *BrokerRedis) InitConsumer(queue string) error {
 	return nil
 }
 
-func (c BrokerRedis) Pop() ([]byte, error) {
+func (c Redis) Pop() ([]byte, error) {
 	body, err := c.client.BRPopLPush(c.consumeQueue, c.unackedQueue, 0).Result()
 	return []byte(body), err
 }
 
-func (c BrokerRedis) Ack() {
+func (c Redis) Ack() {
 	c.client.RPop(c.unackedQueue)
 }
 
-func (c BrokerRedis) heartbeat() {
+func (c Redis) heartbeat() {
 	id := strconv.FormatInt(c.id, 10)
 
 	for {
@@ -65,7 +65,7 @@ func (c BrokerRedis) heartbeat() {
 	}
 }
 
-func (c BrokerRedis) observer() {
+func (c Redis) observer() {
 
 	consumerDieSeconds := int64(15)
 
