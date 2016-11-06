@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+    "github.com/task-queue/go-taskmq"
 	"gopkg.in/redis.v5"
 )
 
@@ -16,6 +17,20 @@ type Redis struct {
 	consumeQueue   string
 	unackedQueue   string
 	heartbeatQueue string
+}
+
+func NewRedis(client *redis.Client) *Redis {
+	return &Redis{
+		client: client,
+	}
+}
+
+func (c Redis) Connect() error {
+    return nil
+}
+
+func (c Redis) Clone() taskmq.IBroker {
+    return &Redis{client: c.client}
 }
 
 func (c Redis) Push(queue string, body []byte) error {
